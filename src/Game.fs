@@ -1,12 +1,13 @@
 module Game
 
-type SnakePart =
-  | Head
-  | Body
+// type SnakePart =
+//   | Head
+//   | Body
+//   | Tail
 
 type Cell =
   | Empty
-  | Snake of SnakePart
+  | Snake of int
 
 type Field = Cell [] []
 
@@ -15,17 +16,7 @@ let emptyField (width: int) (height: int) : Field =
 
 let spawnSnake (field: Field) snakeLength : Field =
   let fieldCopy = field |> Array2D'.copy
-
-  let snake =
-    [|
-      for i in [ 0 .. snakeLength - 1 ] ->
-        if i = snakeLength - 1 then
-          Head
-        else
-          Body
-    |]
-    |> Array.map Snake
-
+  let snake = [| 0 .. snakeLength - 1 |] |> Array.map Snake
   fieldCopy.[0].[0 .. snakeLength - 1] <- snake
   fieldCopy
 
@@ -35,11 +26,11 @@ type Direction =
   | Left
   | Right
 
-let moveSnake (field: Field) (direction: Direction) : Field =
+let moveSnake (field: Field) (snakeLength: int) (direction: Direction) : Field =
   let fieldCopy = field |> Array2D'.copy
 
   let headX, headY =
-    Array2D'.findIndexes (fun _ _ cell -> cell = (Snake Head)) fieldCopy
+    Array2D'.findIndexes (fun _ _ cell -> cell = (Snake 0)) fieldCopy
     |> Option.get
 
   let headTargetX, headTargetY =
@@ -57,41 +48,26 @@ let moveSnake (field: Field) (direction: Direction) : Field =
   let canMove =
     match headTargetCell with
     | Empty -> true
-    | Snake (Body _) -> false
-    | Snake (Head _) -> failwithf "Two heads? Wtf?"
+    | Snake 0 -> failwithf "Two heads? Wtf?"
+    | Snake (_) -> false
 
   if not canMove then
     fieldCopy
   else
-    let tailX, tailY =
-      let tailPredicate x y cell =
-        let isBody = cell = Snake Body
+    Array2D'.iteri
+      (fun xIdx yIdx cell ->
+        match cell with
+        | Snake x ->
+          let nextX = x + 1
 
-        let isOneNeighbour =
-          let snakeNeighbours =
-            [|
-              x - 1, y
-              x + 1, y
-              x, y - 1
-              x, y + 1
-            |]
-            |> Array.map (fun idxs -> Array2D'.wrapIndexes idxs fieldCopy)
-            |> Array.map (fun (x, y) -> fieldCopy.[x].[y])
-            |> Array.filter (fun cell ->
-              match cell with
-              | (Snake _) -> true
-              | _ -> false
-            )
+          if nextX >= snakeLength then
+            fieldCopy.[xIdx].[yIdx] <- Empty
+          else
+            fieldCopy.[xIdx].[yIdx] <- Snake nextX
+        | _ -> ()
+      )
+      fieldCopy
 
-          snakeNeighbours.Length = 1
-
-        isBody && isOneNeighbour
-
-      Array2D'.findIndexes tailPredicate fieldCopy
-      |> Option.get
-
-    fieldCopy.[tailX].[tailY] <- Empty
-    fieldCopy.[headX].[headY] <- Snake Body
-    fieldCopy.[headTargetX].[headTargetY] <- Snake Head
+    fieldCopy.[headTargetX].[headTargetY] <- Snake 0
 
     fieldCopy

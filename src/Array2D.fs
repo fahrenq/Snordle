@@ -28,3 +28,9 @@ let wrapIndexes (idX, idY) (xs: 'a [] []) =
   let lengthX = xs.Length
   let lengthY = xs.[0].Length
   ((idX % lengthX) + lengthX) % lengthX, ((idY % lengthY) + lengthY) % lengthY
+
+let iteri f =
+  Array.iteri (fun idX ys -> ys |> Array.iteri (fun idY y -> f idX idY y))
+
+let mapi f =
+  Array.mapi (fun idX ys -> ys |> Array.mapi (fun idY y -> f idX idY y))

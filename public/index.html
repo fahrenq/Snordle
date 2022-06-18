@@ -7,14 +7,30 @@
   <link rel="shortcut icon" href="fable.ico" />
 </head>
 <body>
-  <div id="game">
-    <canvas width="800px" height="800px"></canvas>
-
+  <div id="game" style="display: flex;">
+    <canvas width="750px" height="750px"></canvas>
+    <pre class="log"></pre>
     <pre id="text"></pre>
   </div>
+
+
   <script src="bundle.js"></script>
 
   <style>
+    #game {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    #game .log {
+      width: 300px;
+      height: 750px;
+      background-color: #000;
+      color: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      overflow-y: auto;
+    }
   </style>
 </body>
 </html>

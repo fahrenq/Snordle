@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Array2D.fs" />
+    <Compile Include="Queue.fs" />
     <Compile Include="Game.fs" />
     <Compile Include="Renderer.fs" />
     <Compile Include="App.fs" />

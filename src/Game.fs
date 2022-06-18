@@ -16,7 +16,12 @@ let emptyField (width: int) (height: int) : Field =
 
 let spawnSnake (field: Field) snakeLength : Field =
   let fieldCopy = field |> Array2D'.copy
-  let snake = [| 0 .. snakeLength - 1 |] |> Array.map Snake
+
+  let snake =
+    [| 0 .. snakeLength - 1 |]
+    |> Array.rev
+    |> Array.map Snake
+
   fieldCopy.[0].[0 .. snakeLength - 1] <- snake
   fieldCopy
 
@@ -26,7 +31,11 @@ type Direction =
   | Left
   | Right
 
-let moveSnake (field: Field) (snakeLength: int) (direction: Direction) : Field =
+let moveSnake
+  (field: Field)
+  (snakeLength: int)
+  (direction: Direction)
+  : Field * Cell * bool =
   let fieldCopy = field |> Array2D'.copy
 
   let headX, headY =
@@ -51,9 +60,7 @@ let moveSnake (field: Field) (snakeLength: int) (direction: Direction) : Field =
     | Snake 0 -> failwithf "Two heads? Wtf?"
     | Snake (_) -> false
 
-  if not canMove then
-    fieldCopy
-  else
+  if canMove then
     Array2D'.iteri
       (fun xIdx yIdx cell ->
         match cell with
@@ -70,4 +77,4 @@ let moveSnake (field: Field) (snakeLength: int) (direction: Direction) : Field =
 
     fieldCopy.[headTargetX].[headTargetY] <- Snake 0
 
-    fieldCopy
+  fieldCopy, headTargetCell, canMove

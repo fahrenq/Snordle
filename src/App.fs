@@ -30,13 +30,28 @@ let rec gameLoop (direction: Game.Direction) length field =
   async {
     do! Async.Sleep 300
 
-    let nextDirection = Game.findNextDirection direction length INPUT_BUFFER field
+    let nextDirection =
+      Game.findNextDirection direction length INPUT_BUFFER field
 
     let newField, headCell, moved = Game.moveSnake length nextDirection field
     Renderer.drawCanvas CANVAS_EL newField |> ignore
 
     return! gameLoop nextDirection length newField
   }
+
+// let (field,_,_) =
+//   Game.emptyField 15 15
+//   |> Game.spawnSnake 5
+//   |> Game.moveSnake 5 Game.Down
+
+// let (field', _, _) =
+//   field
+//   |> Game.moveSnake 5 Game.Left
+// // |> gameLoop Game.Right 5
+// // |> Async.Start
+
+// Renderer.drawCanvas CANVAS_EL field'
+
 
 Game.emptyField 15 15
 |> Game.spawnSnake 5

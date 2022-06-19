@@ -82,7 +82,7 @@ let moveSnake
 
   fieldCopy, headTargetCell, canMove
 
-let rec findNextDirection
+let findNextDirection
   currentDirection
   currentLength
   (queue: Queue<Direction>)
@@ -96,4 +96,4 @@ let rec findNextDirection
     if canMove then
       newDirection
     else
-      findNextDirection currentDirection currentLength queue field
+      currentDirection

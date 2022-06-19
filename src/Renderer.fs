@@ -136,6 +136,47 @@ let rec drawSnakeCell
     drawSnakeCell ctx T (colIdx, rowIdx)
     drawSnakeCell ctx R (colIdx, rowIdx)
 
+let private snakePartFromSurroundings surroundings =
+  match surroundings with
+  | [| _; [| Game.Snake a; Game.Snake cc; _ |]; [| _; Game.Snake b; _ |] |] when
+    Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
+    ->
+    BL
+  | [| _; [| _; Game.Snake cc; Game.Snake a |]; [| _; Game.Snake b; _ |] |] when
+    Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
+    ->
+    RB
+  | [| [| _; Game.Snake a; _ |]; [| Game.Snake b; Game.Snake cc; _ |]; _ |] when
+    Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
+    ->
+    LT
+  | [| [| _; Game.Snake a; _ |]; [| _; Game.Snake cc; Game.Snake b |]; _ |] when
+    Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
+    ->
+    TR
+  | [| [| _; Game.Snake a; _ |]
+       [| _; Game.Snake cc; _ |]
+       [| _; Game.Snake b; _ |] |] when
+    Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
+    ->
+    TB
+  | [| _; [| Game.Snake a; Game.Snake cc; Game.Snake b |]; _ |] when
+    Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
+    ->
+    LR
+  | [| [| _; Game.Snake a; _ |]; [| _; Game.Snake cc; _ |]; [| _; _; _ |] |] when
+    Math.Abs(cc - a) = 1
+    ->
+    T
+  | [| _; [| _; Game.Snake cc; _ |]; [| _; Game.Snake a; _ |] |] when
+    Math.Abs(cc - a) = 1
+    ->
+    B
+  | [| _; [| Game.Snake a; Game.Snake cc; _ |]; _ |] when Math.Abs(cc - a) = 1 ->
+    L
+  | [| _; [| _; Game.Snake cc; Game.Snake a |]; _ |] when Math.Abs(cc - a) = 1 ->
+    R
+  | _ -> failwithf "drawCell (snake part): invalid surroundings"
 
 let drawCell
   (ctx: CanvasRenderingContext2D)
@@ -149,55 +190,8 @@ let drawCell
 
   match cell with
   | Game.Cell.Snake x ->
-
-    let snakePart =
-      match surroundings with
-      | [| _; [| Game.Snake a; Game.Snake cc; _ |]; [| _; Game.Snake b; _ |] |] when
-        Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
-        ->
-        BL
-      | [| _; [| _; Game.Snake cc; Game.Snake a |]; [| _; Game.Snake b; _ |] |] when
-        Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
-        ->
-        RB
-      | [| [| _; Game.Snake a; _ |]; [| Game.Snake b; Game.Snake cc; _ |]; _ |] when
-        Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
-        ->
-        LT
-      | [| [| _; Game.Snake a; _ |]; [| _; Game.Snake cc; Game.Snake b |]; _ |] when
-        Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
-        ->
-        TR
-      | [| [| _; Game.Snake a; _ |]
-           [| _; Game.Snake cc; _ |]
-           [| _; Game.Snake b; _ |] |] when
-        Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
-        ->
-        TB
-      | [| _; [| Game.Snake a; Game.Snake cc; Game.Snake b |]; _ |] when
-        Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
-        ->
-        LR
-      | [| [| _; Game.Snake a; _ |]; [| _; Game.Snake cc; _ |]; [| _; _; _ |] |] when
-        Math.Abs(cc - a) = 1
-        ->
-        T
-      | [| _; [| _; Game.Snake cc; _ |]; [| _; Game.Snake a; _ |] |] when
-        Math.Abs(cc - a) = 1
-        ->
-        B
-      | [| _; [| Game.Snake a; Game.Snake cc; _ |]; _ |] when
-        Math.Abs(cc - a) = 1
-        ->
-        L
-      | [| _; [| _; Game.Snake cc; Game.Snake a |]; _ |] when
-        Math.Abs(cc - a) = 1
-        ->
-        R
-      | _ -> failwithf "drawCell (snake part): invalid surroundings"
-
+    let snakePart = snakePartFromSurroundings surroundings
     drawSnakeCell ctx snakePart (colIdx, rowIdx)
-
   | _ -> ()
 
 let drawCanvas (canvas: HTMLCanvasElement) field : Game.Field =

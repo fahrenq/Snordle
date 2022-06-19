@@ -1,13 +1,12 @@
 module Renderer
 
-open Game
 open Browser.Types
 open Fable.Core
 
-let cellToString (cell: Cell) : string =
+let cellToString (cell: Game.Cell) : string =
   match cell with
-  | Empty -> "S"
-  | Snake x -> x.ToString()
+  | Game.Cell.Empty -> "S"
+  | Game.Cell.Snake x -> x.ToString()
 
 let fieldToText field =
   field
@@ -36,7 +35,7 @@ let drawCellBackground (ctx: CanvasRenderingContext2D) (xIdx, yIdx, _) =
 
 let drawCell
   (ctx: CanvasRenderingContext2D)
-  (surroundings: Cell [] [])
+  (surroundings: Game.Cell [] [])
   (xIdx, yIdx, cell)
   =
 
@@ -45,7 +44,7 @@ let drawCell
     + (CELL_SIDE - CELL_SIDE * SNAKE_CELL_RATIO) / 2. // add half of the empty space
 
   match cell with
-  | Snake x ->
+  | Game.Cell.Snake x ->
 
     ctx.fillStyle <- U3.Case1 SNAKE_COLOR
 
@@ -57,7 +56,12 @@ let drawCell
     )
 
     ctx.fillStyle <- U3.Case1 "white"
-    ctx.fillText (x.ToString(), calcLocation yIdx + 20., calcLocation xIdx + 20.)
+
+    ctx.fillText (
+      x.ToString(),
+      calcLocation yIdx + 20.,
+      calcLocation xIdx + 20.
+    )
 
   | _ -> ()
 
@@ -97,5 +101,6 @@ let drawCanvas (canvas: HTMLCanvasElement) field =
       )
 
     drawCell ctx surroundings (xIdx, yIdx, cell)
-
   )
+
+  field

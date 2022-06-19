@@ -1,65 +1,45 @@
 module App
 
-open Game
 open Browser.Dom
 open Queue
 
-let mutable field = emptyField 15 15
-field <- spawnSnake field 5
+// let LOG_EL = document.querySelector (".log") :?> Browser.Types.HTMLElement
 
-let canvas =
-  document.querySelector ("#game canvas") :?> Browser.Types.HTMLCanvasElement
+// let writeLog text =
+//   LOG_EL.innerHTML <- sprintf "%s\n%s" text LOG_EL.innerHTML
 
-let textElement =
-  document.querySelector ("#game #text") :?> Browser.Types.HTMLElement
-
-let log = document.querySelector (".log") :?> Browser.Types.HTMLElement
-
-let writeLog text =
-  log.innerHTML <- sprintf "%s\n%s" text log.innerHTML
-
-let render () =
-  Renderer.drawCanvas canvas field
-  textElement.innerHTML <- Renderer.fieldToText field
-
-render ()
-
-let inputBuffer = new Queue<Direction>(3)
+let INPUT_BUFFER = new Queue<Game.Direction>(3)
 
 document.onkeydown <-
   fun e ->
     match e.code with
-    | "ArrowUp" -> inputBuffer.TryEnqueue Up |> ignore
-    | "ArrowRight" -> inputBuffer.TryEnqueue Right |> ignore
-    | "ArrowDown" -> inputBuffer.TryEnqueue Down |> ignore
-    | "ArrowLeft" -> inputBuffer.TryEnqueue Left |> ignore
+    | "ArrowUp" -> INPUT_BUFFER.TryEnqueue Game.Up |> ignore
+    | "ArrowRight" -> INPUT_BUFFER.TryEnqueue Game.Right |> ignore
+    | "ArrowDown" -> INPUT_BUFFER.TryEnqueue Game.Down |> ignore
+    | "ArrowLeft" -> INPUT_BUFFER.TryEnqueue Game.Left |> ignore
     | _ -> ()
 
 
-let rec findNextDirection currentDirection (queue: Queue<Direction>) =
-  match queue.TryDequeue() with
-  | None -> currentDirection
-  // | Some newDirection when currentDirection = newDirection ->
-  //   findNextDirection currentDirection queue
-  | Some newDirection ->
-    let _, _, canMove = moveSnake field 5 newDirection
+let CANVAS_EL =
+  document.querySelector ("#game canvas") :?> Browser.Types.HTMLCanvasElement
 
-    if canMove then
-      newDirection
-    else
-      findNextDirection currentDirection queue
+let TEXT_EL =
+  document.querySelector ("#game #text") :?> Browser.Types.HTMLElement
 
-let rec loop (prevDirection: Direction) =
+let rec gameLoop (direction: Game.Direction) length field =
   async {
     do! Async.Sleep 300
-    let nextDirection = findNextDirection prevDirection inputBuffer
 
-    writeLog ("Next direction: " + nextDirection.ToString())
+    let nextDirection = Game.findNextDirection direction length INPUT_BUFFER field
 
-    let newField, headCell, moved = moveSnake field 5 nextDirection
-    field <- newField
-    render ()
-    return! loop nextDirection
+    let newField, headCell, moved = Game.moveSnake length nextDirection field
+    Renderer.drawCanvas CANVAS_EL newField |> ignore
+
+    return! gameLoop nextDirection length newField
   }
 
-loop Right |> Async.Start
+Game.emptyField 15 15
+|> Game.spawnSnake 5
+|> Renderer.drawCanvas CANVAS_EL
+|> gameLoop Game.Right 5
+|> Async.Start

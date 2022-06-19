@@ -1,4 +1,7 @@
+[<RequireQualifiedAccess>]
 module Game
+
+open Queue
 
 // type SnakePart =
 //   | Head
@@ -14,7 +17,7 @@ type Field = Cell [] []
 let emptyField (width: int) (height: int) : Field =
   Array2D'.create width height Empty
 
-let spawnSnake (field: Field) snakeLength : Field =
+let spawnSnake snakeLength (field: Field) : Field =
   let fieldCopy = field |> Array2D'.copy
 
   let snake =
@@ -32,9 +35,9 @@ type Direction =
   | Right
 
 let moveSnake
-  (field: Field)
   (snakeLength: int)
   (direction: Direction)
+  (field: Field)
   : Field * Cell * bool =
   let fieldCopy = field |> Array2D'.copy
 
@@ -78,3 +81,19 @@ let moveSnake
     fieldCopy.[headTargetX].[headTargetY] <- Snake 0
 
   fieldCopy, headTargetCell, canMove
+
+let rec findNextDirection
+  currentDirection
+  currentLength
+  (queue: Queue<Direction>)
+  field
+  =
+  match queue.TryDequeue() with
+  | None -> currentDirection
+  | Some newDirection ->
+    let _, _, canMove = moveSnake currentLength newDirection field
+
+    if canMove then
+      newDirection
+    else
+      findNextDirection currentDirection currentLength queue field

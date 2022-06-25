@@ -32,7 +32,7 @@ type State =
   {
     Word: string
     CurrentGuess: string
-    PastGuesses: string []
+    PastGuesses: (string * Game.CheckGuessResult) []
     Direction: Game.Direction
     Field: Game.Field
   }
@@ -61,21 +61,20 @@ let rec gameLoop (state: State) =
     let newCurrentGuess, newPastGuesses =
       match headCell with
       | Game.Cell.Letter c ->
-        let n = state.CurrentGuess + c.ToString()
+        let newCurrentGuess = state.CurrentGuess + c.ToString()
 
-        writeLog $"New letter found. Current word: {n}"
+        writeLog $"New letter found. Current word: {newCurrentGuess}"
 
-        match Game.checkGuess state.Word n with
-        | Game.TooShort -> (n, state.PastGuesses)
-        | Game.NotFound ->
-          writeLog "Invalid word"
-          ("", Array.append (state.PastGuesses) [| n |])
-        | Game.Guessed ->
-          writeLog "You Won!"
-          ("", Array.append (state.PastGuesses) [| n |])
-        | Game.NotGuessed wordleGraph ->
-          writeLog $"Valid word, graph: {wordleGraph}"
-          ("", Array.append (state.PastGuesses) [| n |])
+        if newCurrentGuess.Length = state.Word.Length then
+          "",
+          Array.append
+            state.PastGuesses
+            [|
+              newCurrentGuess, Game.checkGuess state.Word newCurrentGuess
+            |]
+        else
+          newCurrentGuess, state.PastGuesses
+
 
       | _ -> state.CurrentGuess, state.PastGuesses
 

@@ -173,17 +173,14 @@ let calculateWordleGraph (word: string) (guess: string) =
   output
 
 type CheckGuessResult =
-  | TooShort
-  | NotFound
+  | NotAllowed
   | NotGuessed of WordleGraph
   | Guessed
 
 let checkGuess (word: string) (guess: string) =
   if guess = word then
     Guessed
-  elif guess.Length < word.Length then
-    TooShort
   elif Words.ALLOWED_WORDS |> Array.contains guess then
     NotGuessed(calculateWordleGraph word guess)
   else
-    NotFound
+    NotAllowed

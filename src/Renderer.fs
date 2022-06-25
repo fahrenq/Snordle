@@ -21,6 +21,7 @@ let CELL_COLOR_2 = "#AEDBCE"
 let SNAKE_COLOR = "#635666"
 let SNAKE_CELL_RATIO = 0.75
 let SNAKE_STROKE_WIDTH = 2.
+let TEXT_SIZE = 40.
 
 let drawCellBackground (ctx: CanvasRenderingContext2D) (xIdx, yIdx, _) =
   if (yIdx + xIdx) % 2 = 0 then
@@ -136,7 +137,7 @@ let rec drawSnakeCell
     drawSnakeCell ctx T (colIdx, rowIdx)
     drawSnakeCell ctx R (colIdx, rowIdx)
 
-let private snakePartFromSurroundings surroundings =
+let private snakeCellFromSurroundings surroundings =
   match surroundings with
   | [| _; [| Game.Snake a; Game.Snake cc; _ |]; [| _; Game.Snake b; _ |] |] when
     Math.Abs(cc - a) = 1 && Math.Abs(cc - b) = 1
@@ -184,15 +185,20 @@ let drawCell
   (colIdx, rowIdx, cell)
   =
 
-  let calcLocation idx =
-    (float idx * CELL_SIDE)
-    + (CELL_SIDE - CELL_SIDE * SNAKE_CELL_RATIO) / 2. // add half of the empty space
-
   match cell with
-  | Game.Cell.Snake x ->
-    let snakePart = snakePartFromSurroundings surroundings
-    drawSnakeCell ctx snakePart (colIdx, rowIdx)
-  | _ -> ()
+  | Game.Cell.Snake _ ->
+    let snakeCell = snakeCellFromSurroundings surroundings
+    drawSnakeCell ctx snakeCell (colIdx, rowIdx)
+  | Game.Cell.Letter letter ->
+    let x = float rowIdx * CELL_SIDE + (CELL_SIDE/2.)
+    let y = float colIdx * CELL_SIDE + (CELL_SIDE/2.)
+
+    ctx.fillStyle <- !^ "black"
+    ctx.font <- $"{TEXT_SIZE}px arial"
+    ctx.textBaseline <- "middle"
+    ctx.textAlign <- "center"
+    ctx.fillText (letter.ToString(), x, y)
+  | Game.Cell.Empty -> ()
 
 let drawCanvas (canvas: HTMLCanvasElement) field : Game.Field =
   let ctx = canvas.getContext_2d None

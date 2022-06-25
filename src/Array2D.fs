@@ -1,36 +1,62 @@
 module Array2D'
 
-let create (lengthX: int) (lengthY: int) valueY =
-  Array.create lengthX (Array.create lengthY valueY)
+let create (lengthRows: int) (lengthCols: int) valueY =
+  Array.create lengthRows (Array.create lengthCols valueY)
 
-let copy (xs: 'a [] []) : 'a [] [] =
-  let lengthX = Array.length xs
-  let lengthY = Array.length (xs.[0])
+let copy (aa: 'a [] []) : 'a [] [] =
+  let lengthRows = Array.length aa
+  let lengthCols = Array.length (aa.[0])
 
-  Array.init lengthX (fun idX -> Array.init lengthY (fun idY -> xs.[idX].[idY]))
+  Array.init
+    lengthRows
+    (fun rowIdx -> Array.init lengthCols (fun colIdx -> aa.[rowIdx].[colIdx]))
 
 /// Returns first x,y index of the given value in the matrix.
-let findIndexes f (xs: 'a [] []) =
-  xs
+let findIndexes f (aa: 'a [] []) =
+  aa
   |> Array.indexed
-  |> Array.tryPick (fun (idX, ys) ->
-    ys
+  |> Array.tryPick (fun (rowIdx, rows) ->
+    rows
     |> Array.indexed
-    |> Array.tryPick (fun (idY, y) ->
-      if f idX idY y then
-        Some(idX, idY)
+    |> Array.tryPick (fun (colIdx, col) ->
+      if f rowIdx colIdx col then
+        Some(rowIdx, colIdx)
       else
         None
     )
   )
 
-let wrapIndexes (idX, idY) (xs: 'a [] []) =
-  let lengthX = xs.Length
-  let lengthY = xs.[0].Length
-  ((idX % lengthX) + lengthX) % lengthX, ((idY % lengthY) + lengthY) % lengthY
+/// Returns all x,y index of the given value in the matrix.
+let findAllIndexes f (aa: 'a [] []) =
+  aa
+  |> Array.indexed
+  |> Array.map (fun (rowIdx, rows) ->
+    rows
+    |> Array.indexed
+    |> Array.choose (fun (colIdx, col) ->
+      if f rowIdx colIdx col then
+        Some(rowIdx, colIdx)
+      else
+        None
+    )
+  )
+  |> Array.collect id
+
+let wrapIndexes (rowIdx, colIdx) (aa: 'a [] []) =
+  let lengthRows = aa.Length
+  let lengthCols = aa.[0].Length
+
+  ((rowIdx % lengthRows) + lengthRows) % lengthRows,
+  ((colIdx % lengthCols) + lengthCols) % lengthCols
 
 let iteri f =
-  Array.iteri (fun idX ys -> ys |> Array.iteri (fun idY y -> f idX idY y))
+  Array.iteri (fun rowIdx rows ->
+    rows
+    |> Array.iteri (fun colIdx col -> f rowIdx colIdx col)
+  )
 
 let mapi f =
-  Array.mapi (fun idX ys -> ys |> Array.mapi (fun idY y -> f idX idY y))
+  Array.mapi (fun rowIdx rows ->
+    rows
+    |> Array.mapi (fun colIdx col -> f rowIdx colIdx col)
+  )

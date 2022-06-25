@@ -3,6 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Words.fs" />
     <Compile Include="Array2D.fs" />
     <Compile Include="Queue.fs" />
     <Compile Include="Game.fs" />

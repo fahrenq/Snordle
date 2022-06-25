@@ -3,12 +3,13 @@ module App
 open Browser.Dom
 open Queue
 
-// let LOG_EL = document.querySelector (".log") :?> Browser.Types.HTMLElement
+let LOG_EL = document.querySelector (".log") :?> Browser.Types.HTMLElement
 
-// let writeLog text =
-//   LOG_EL.innerHTML <- sprintf "%s\n%s" text LOG_EL.innerHTML
+let writeLog text =
+  LOG_EL.innerHTML <- sprintf "%s\n%s" text LOG_EL.innerHTML
 
 let INPUT_BUFFER = new Queue<Game.Direction>(3)
+let BASE_SNAKE_LENGTH = 5
 
 document.onkeydown <-
   fun e ->
@@ -26,17 +27,69 @@ let CANVAS_EL =
 let TEXT_EL =
   document.querySelector ("#game #text") :?> Browser.Types.HTMLElement
 
-let rec gameLoop (direction: Game.Direction) length field =
+
+type State =
+  {
+    Word: string
+    CurrentGuess: string
+    PastGuesses: string []
+    Direction: Game.Direction
+    Field: Game.Field
+  }
+
+let rec gameLoop (state: State) =
   async {
     do! Async.Sleep 300
 
-    let nextDirection =
-      Game.findNextDirection direction length INPUT_BUFFER field
+    let snakeLength = BASE_SNAKE_LENGTH + state.PastGuesses.Length
 
-    let newField, headCell, moved = Game.moveSnake length nextDirection field
+    let newDirection =
+      Game.findNextDirection
+        state.Direction
+        snakeLength
+        INPUT_BUFFER
+        state.Field
+
+    let fieldAfterMove, headCell, moved =
+      Game.moveSnake snakeLength newDirection state.Field
+
+    let newField =
+      match headCell with
+      | Game.Cell.Letter c -> Game.spawnLettersRandomly [| c |] fieldAfterMove
+      | _ -> fieldAfterMove
+
+    let newCurrentGuess, newPastGuesses =
+      match headCell with
+      | Game.Cell.Letter c ->
+        let n = state.CurrentGuess + c.ToString()
+
+        writeLog $"New letter found. Current word: {n}"
+
+        match Game.checkGuess state.Word n with
+        | Game.TooShort -> (n, state.PastGuesses)
+        | Game.NotFound ->
+          writeLog "Invalid word"
+          ("", Array.append (state.PastGuesses) [| n |])
+        | Game.Guessed ->
+          writeLog "You Won!"
+          ("", Array.append (state.PastGuesses) [| n |])
+        | Game.NotGuessed wordleGraph ->
+          writeLog $"Valid word, graph: {wordleGraph}"
+          ("", Array.append (state.PastGuesses) [| n |])
+
+      | _ -> state.CurrentGuess, state.PastGuesses
+
     Renderer.drawCanvas CANVAS_EL newField |> ignore
 
-    return! gameLoop nextDirection length newField
+    let newState =
+      { state with
+          CurrentGuess = newCurrentGuess
+          PastGuesses = newPastGuesses
+          Direction = newDirection
+          Field = newField
+      }
+
+    return! gameLoop newState
   }
 
 // let (field,_,_) =
@@ -52,9 +105,19 @@ let rec gameLoop (direction: Game.Direction) length field =
 
 // Renderer.drawCanvas CANVAS_EL field'
 
+let initialState =
+  {
+    Word = Game.randomPossibleWord ()
+    Direction = Game.Right
+    CurrentGuess = ""
+    PastGuesses = [||]
+    Field =
+      (Game.emptyField 15 15
+       |> Game.spawnSnake BASE_SNAKE_LENGTH
+       |> Game.spawnAllLettersRandomly)
+  }
 
-Game.emptyField 15 15
-|> Game.spawnSnake 5
-|> Renderer.drawCanvas CANVAS_EL
-|> gameLoop Game.Right 5
-|> Async.Start
+Renderer.drawCanvas CANVAS_EL initialState.Field
+|> ignore
+
+gameLoop initialState |> Async.Start

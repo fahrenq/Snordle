@@ -3,14 +3,10 @@ module Game
 
 open Queue
 
-// type SnakePart =
-//   | Head
-//   | Body
-//   | Tail
-
 type Cell =
   | Empty
   | Snake of int
+  | Letter of char
 
 type Field = Cell [] []
 
@@ -41,44 +37,45 @@ let moveSnake
   : Field * Cell * bool =
   let fieldCopy = field |> Array2D'.copy
 
-  let headX, headY =
+  let headRowIdx, headColIdx =
     Array2D'.findIndexes (fun _ _ cell -> cell = (Snake 0)) fieldCopy
     |> Option.get
 
-  let headTargetX, headTargetY =
+  let headTargetRowIdx, headTargetColIdx =
     fieldCopy
     |> Array2D'.wrapIndexes (
       match direction with
-      | Up -> headX - 1, headY
-      | Right -> headX, headY + 1
-      | Down -> headX + 1, headY
-      | Left -> headX, headY - 1
+      | Up -> headRowIdx - 1, headColIdx
+      | Right -> headRowIdx, headColIdx + 1
+      | Down -> headRowIdx + 1, headColIdx
+      | Left -> headRowIdx, headColIdx - 1
     )
 
-  let headTargetCell = fieldCopy.[headTargetX].[headTargetY]
+  let headTargetCell = fieldCopy.[headTargetRowIdx].[headTargetColIdx]
 
   let canMove =
     match headTargetCell with
     | Empty -> true
+    | Letter _ -> true
     | Snake 0 -> failwithf "Two heads? Wtf?"
     | Snake (_) -> false
 
   if canMove then
     Array2D'.iteri
-      (fun xIdx yIdx cell ->
+      (fun rowIdx colIdx cell ->
         match cell with
         | Snake x ->
           let nextX = x + 1
 
           if nextX >= snakeLength then
-            fieldCopy.[xIdx].[yIdx] <- Empty
+            fieldCopy.[rowIdx].[colIdx] <- Empty
           else
-            fieldCopy.[xIdx].[yIdx] <- Snake nextX
+            fieldCopy.[rowIdx].[colIdx] <- Snake nextX
         | _ -> ()
       )
       fieldCopy
 
-    fieldCopy.[headTargetX].[headTargetY] <- Snake 0
+    fieldCopy.[headTargetRowIdx].[headTargetColIdx] <- Snake 0
 
   fieldCopy, headTargetCell, canMove
 
@@ -97,3 +94,96 @@ let findNextDirection
       newDirection
     else
       currentDirection
+
+let spawnLetter (letter: char) rowIdx colIdx (field: Field) : Field =
+  if field.[rowIdx].[colIdx] <> Empty then
+    failwithf "Tried to spawn letter on non-empty cell"
+
+  let fieldCopy = field |> Array2D'.copy
+  fieldCopy.[rowIdx].[colIdx] <- Letter letter
+  fieldCopy
+
+let ALL_LETTERS = [| 'a' .. 'z' |]
+
+let spawnLettersRandomly (letters: char []) field =
+  let fieldCopy = field |> Array2D'.copy
+
+  let rng = System.Random()
+
+  let emptyCellIndexesRnd =
+    Array2D'.findAllIndexes (fun _ _ cell -> cell = Empty) fieldCopy
+    |> Array.sortBy (fun _ -> rng.Next())
+
+  let lettersPlacement =
+    emptyCellIndexesRnd
+    |> Array.take (Array.length letters)
+    |> Array.zip letters
+
+  lettersPlacement
+  |> Array.fold
+    (fun fieldState (c, (rowIdx, colIdx)) ->
+      spawnLetter c rowIdx colIdx fieldState
+    )
+    fieldCopy
+
+let spawnAllLettersRandomly = spawnLettersRandomly ALL_LETTERS
+
+let randomPossibleWord () =
+  let rng = System.Random()
+  Words.POSSIBLE_WORDS.[rng.Next Words.POSSIBLE_WORDS.Length]
+
+type WordleMarker =
+  | Grey
+  | Yellow
+  | Green
+
+type WordleGraph = WordleMarker []
+
+let calculateWordleGraph (word: string) (guess: string) =
+  let guessCharacters =
+    (guess.PadRight word.Length).ToCharArray()
+    |> Array.map Some
+
+  let wordCharacters = word.ToCharArray() |> Array.map Some
+
+  let output = Array.create word.Length Grey
+
+  // Find all green characters and delete them from the word and guess.
+  wordCharacters
+  |> Array.iteri (fun idx character ->
+    if guessCharacters.[idx] = character then
+      wordCharacters.[idx] <- None
+      guessCharacters.[idx] <- None
+      output.[idx] <- Green
+  )
+
+  // Find all yellow characters and delete them from the word and guess.
+  wordCharacters
+  |> Array.iteri (fun idx character ->
+    match guessCharacters
+          |> Array.tryFindIndex (fun c -> Option.isSome c && c = character)
+      with
+    | Some yellowIdx ->
+      wordCharacters.[idx] <- None
+      guessCharacters.[yellowIdx] <- None
+      output.[yellowIdx] <- Yellow
+    | None -> ()
+  )
+
+  output
+
+type CheckGuessResult =
+  | TooShort
+  | NotFound
+  | NotGuessed of WordleGraph
+  | Guessed
+
+let checkGuess (word: string) (guess: string) =
+  if guess = word then
+    Guessed
+  elif guess.Length < word.Length then
+    TooShort
+  elif Words.ALLOWED_WORDS |> Array.contains guess then
+    NotGuessed(calculateWordleGraph word guess)
+  else
+    NotFound

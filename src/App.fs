@@ -27,6 +27,11 @@ let CANVAS_EL =
 let TEXT_EL =
   document.querySelector ("#game #text") :?> Browser.Types.HTMLElement
 
+let CURRENT_GUESS_EL =
+  document.querySelector ("#game #current-guess") :?> Browser.Types.HTMLElement
+
+let GUESS_HISTORY_EL =
+  document.querySelector ("#game #guess-history") :?> Browser.Types.HTMLElement
 
 type State =
   {
@@ -79,6 +84,25 @@ let rec gameLoop (state: State) =
       | _ -> state.CurrentGuess, state.PastGuesses
 
     Renderer.drawCanvas CANVAS_EL newField |> ignore
+    Renderer.renderGuesses CURRENT_GUESS_EL [| newCurrentGuess |]
+
+    let pastGuessesToRender =
+      newPastGuesses
+      |> Array.rev
+      |> Array.sortBy (fun (word, checkGuessResult) ->
+        match checkGuessResult with
+        | Game.CheckGuessResult.Guessed -> 0
+        | Game.CheckGuessResult.NotGuessed _ -> 1
+        | Game.CheckGuessResult.NotAllowed _ -> 2
+      )
+
+    Renderer.renderGuesses
+      GUESS_HISTORY_EL
+      (pastGuessesToRender |> Array.map fst)
+
+    Renderer.colorGuesses
+      GUESS_HISTORY_EL
+      (pastGuessesToRender |> Array.map snd)
 
     let newState =
       { state with
@@ -111,7 +135,7 @@ let initialState =
     CurrentGuess = ""
     PastGuesses = [||]
     Field =
-      (Game.emptyField 15 15
+      (Game.emptyField 12 12
        |> Game.spawnSnake BASE_SNAKE_LENGTH
        |> Game.spawnAllLettersRandomly)
   }
@@ -120,3 +144,5 @@ Renderer.drawCanvas CANVAS_EL initialState.Field
 |> ignore
 
 gameLoop initialState |> Async.Start
+
+// Renderer.renderGuesses CURRENT_GUESS_EL [| "hello" |]

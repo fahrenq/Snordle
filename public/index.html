@@ -8,9 +8,15 @@
 </head>
 <body>
   <div id="game" style="display: flex;">
-    <canvas width="750px" height="750px"></canvas>
+    <canvas width="600" height="600"></canvas>
+
+    <div id="guesses">
+      <div id="current-guess">
+      </div>
+      <div id="guess-history"></div>
+    </div>
+
     <pre class="log"></pre>
-    <pre id="text"></pre>
   </div>
 
 
@@ -20,6 +26,7 @@
     #game {
       display: flex;
       justify-content: space-between;
+      align-items: self-start;
     }
 
     #game .log {
@@ -30,6 +37,37 @@
       padding: 10px;
       border-radius: 10px;
       overflow-y: auto;
+    }
+
+    .guess {
+      display: flex;
+    }
+
+    .guess .letter {
+      width: 50px;
+      height: 50px;
+      border: 1px solid black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+    }
+
+    .guess .letter.green, .guess.guessed .letter {
+      background-color: lightgreen;
+    }
+
+    .guess .letter.grey {
+      background-color: lightgray;
+    }
+
+    .guess .letter.yellow {
+      background-color: lightyellow;
+    }
+
+    .guess.not-allowed .letter {
+      color: lightgray;
+      border-color: lightgray;
     }
   </style>
 </body>

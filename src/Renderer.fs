@@ -9,6 +9,7 @@ let cellToString (cell: Game.Cell) : string =
   match cell with
   | Game.Cell.Empty -> "S"
   | Game.Cell.Snake x -> x.ToString()
+  | Game.Cell.Letter x -> x.ToString()
 
 let fieldToText field =
   field
@@ -190,8 +191,8 @@ let drawCell
     let snakeCell = snakeCellFromSurroundings surroundings
     drawSnakeCell ctx snakeCell (colIdx, rowIdx)
   | Game.Cell.Letter letter ->
-    let x = float rowIdx * CELL_SIDE + (CELL_SIDE/2.)
-    let y = float colIdx * CELL_SIDE + (CELL_SIDE/2.)
+    let x = float rowIdx * CELL_SIDE + (CELL_SIDE / 2.)
+    let y = float colIdx * CELL_SIDE + (CELL_SIDE / 2.)
 
     ctx.fillStyle <- !^ "black"
     ctx.font <- $"{TEXT_SIZE}px arial"
@@ -239,3 +240,61 @@ let drawCanvas (canvas: HTMLCanvasElement) field : Game.Field =
   )
 
   field
+
+open Browser.Dom
+
+let private fillGuess (el: HTMLElement) (guess: string) =
+  el.querySelectorAll ".letter"
+  |> NodeListOf.toArray
+  |> Array.iteri (fun i el ->
+    match guess.ToCharArray() |> Array.tryItem i with
+    | Some letter -> el.innerHTML <- letter.ToString()
+    | None -> ()
+  )
+
+let private emptyGuessHTML length =
+  Array.create length """<span class="letter"></span>"""
+  |> String.concat ""
+
+let renderGuesses (el: HTMLElement) (guesses: string []) =
+  let guessesHTML =
+    guesses
+    |> Array.map (fun guess ->
+      let guessEl = document.createElement "div"
+      guessEl.classList.add "guess"
+      guessEl.innerHTML <- emptyGuessHTML 5
+      fillGuess guessEl guess
+      guessEl.outerHTML
+    )
+    |> String.concat ""
+
+  el.innerHTML <- guessesHTML
+
+let private colorGuess (el: Element) (wordleGraph: Game.WordleGraph) =
+  el.querySelectorAll "span.letter"
+  |> NodeListOf.toArray
+  |> Array.iteri (fun i letterEl ->
+    let wordleMarker = wordleGraph.[i]
+
+    let htmlClass =
+      match wordleMarker with
+      | Game.WordleMarker.Green -> "green"
+      | Game.WordleMarker.Grey -> "grey"
+      | Game.WordleMarker.Yellow -> "yellow"
+
+    letterEl.classList.add htmlClass
+  )
+
+let colorGuesses (el: HTMLElement) (guesses: Game.CheckGuessResult []) =
+  el.querySelectorAll ".guess"
+  |> NodeListOf.toArray
+  |> Array.iteri (fun i guessEl ->
+    let checkGuessResult = guesses.[i]
+
+    match checkGuessResult with
+    | Game.CheckGuessResult.NotGuessed wordleGraph ->
+      colorGuess guessEl wordleGraph
+      guessEl.classList.add "not-guessed"
+    | Game.CheckGuessResult.NotAllowed -> guessEl.classList.add "not-allowed"
+    | Game.CheckGuessResult.Guessed -> guessEl.classList.add "guessed"
+  )

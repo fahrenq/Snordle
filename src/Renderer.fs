@@ -183,6 +183,7 @@ let private snakeCellFromSurroundings surroundings =
 
 let drawCell
   (ctx: CanvasRenderingContext2D)
+  (knownUnusedLetters: char [])
   (surroundings: Game.Cell [] [])
   (colIdx, rowIdx, cell)
   =
@@ -195,7 +196,11 @@ let drawCell
     let x = float rowIdx * CELL_SIDE + (CELL_SIDE / 2.)
     let y = float colIdx * CELL_SIDE + (CELL_SIDE / 2.)
 
-    ctx.fillStyle <- !^ "black"
+    if Array.contains letter knownUnusedLetters then
+      ctx.fillStyle <- !^ "grey"
+    else
+      ctx.fillStyle <- !^ "black"
+
     ctx.font <- $"{TEXT_SIZE}px arial"
     ctx.textBaseline <- "middle"
     ctx.textAlign <- "center"
@@ -212,7 +217,11 @@ let drawCell
     ctx.fillText ("BS", x, y)
   | Game.Cell.Empty -> ()
 
-let drawCanvas (canvas: HTMLCanvasElement) field : Game.Field =
+let drawCanvas
+  (canvas: HTMLCanvasElement)
+  (knownUnusedLetters: char [])
+  field
+  : Game.Field =
   let ctx = canvas.getContext_2d None
 
   field
@@ -247,7 +256,7 @@ let drawCanvas (canvas: HTMLCanvasElement) field : Game.Field =
         )
       )
 
-    drawCell ctx surroundings (xIdx, yIdx, cell)
+    drawCell ctx knownUnusedLetters surroundings (xIdx, yIdx, cell)
   )
 
   field

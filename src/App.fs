@@ -38,6 +38,7 @@ type State =
     Word: string
     CurrentGuess: string
     PastGuesses: (string * Game.CheckGuessResult) []
+    KnownUnusedLetters: char []
     Direction: Game.Direction
     Field: Game.Field
   }
@@ -66,7 +67,7 @@ let rec gameLoop (state: State) =
         Game.Spawner.spawnRandomly [| Game.Cell.Backspace |] fieldAfterMove
       | _ -> fieldAfterMove
 
-    let newCurrentGuess, newPastGuesses =
+    let newCurrentGuess, newPastGuesses, newKnownUnusedLetters =
       match headCell with
       | Game.Cell.Letter c ->
         let newCurrentGuess = state.CurrentGuess + c.ToString()
@@ -74,22 +75,57 @@ let rec gameLoop (state: State) =
         writeLog $"New letter found. Current word: {newCurrentGuess}"
 
         if newCurrentGuess.Length = state.Word.Length then
-          "",
-          Array.append
-            state.PastGuesses
-            [|
-              newCurrentGuess, Game.checkGuess state.Word newCurrentGuess
-            |]
+          match Game.checkGuess state.Word newCurrentGuess with
+          | Game.CheckGuessResult.Guessed as checkGuessResult ->
+            writeLog "You win!"
+
+            "",
+            Array.append
+              state.PastGuesses
+              [| newCurrentGuess, checkGuessResult |],
+            state.KnownUnusedLetters
+
+          | Game.CheckGuessResult.NotAllowed as checkGuessResult ->
+            writeLog "Invalid word, get longer!"
+
+            "",
+            Array.append
+              state.PastGuesses
+              [| newCurrentGuess, checkGuessResult |],
+            state.KnownUnusedLetters
+
+          | Game.CheckGuessResult.NotGuessed graph as checkGuessResult ->
+            writeLog "Valid guess, but not the word!"
+
+            // update knownUnusedLetters
+            let unusedLetters =
+              graph
+              |> Array.indexed
+              |> Array.filter (fun (_, marker) ->
+                marker = Game.WordleMarker.Grey
+              )
+              |> Array.map (fun (idx, _) -> newCurrentGuess.[idx])
+
+            "",
+            Array.append
+              state.PastGuesses
+              [| newCurrentGuess, checkGuessResult |],
+            Array.append state.KnownUnusedLetters unusedLetters
+            |> Array.distinct
+
         else
-          newCurrentGuess, state.PastGuesses
+          newCurrentGuess, state.PastGuesses, state.KnownUnusedLetters
       | Game.Cell.Backspace ->
         writeLog "Backspace found. Current word: {state.CurrentGuess}"
 
         state.CurrentGuess.Substring(0, state.CurrentGuess.Length - 1),
-        state.PastGuesses
-      | _ -> state.CurrentGuess, state.PastGuesses
+        state.PastGuesses,
+        state.KnownUnusedLetters
+      | _ -> state.CurrentGuess, state.PastGuesses, state.KnownUnusedLetters
 
-    Renderer.drawCanvas CANVAS_EL newField |> ignore
+    Renderer.drawCanvas CANVAS_EL state.KnownUnusedLetters newField
+    |> ignore
+
     Renderer.renderGuesses CURRENT_GUESS_EL [| newCurrentGuess |]
 
     let pastGuessesToRender =
@@ -115,6 +151,7 @@ let rec gameLoop (state: State) =
           CurrentGuess = newCurrentGuess
           PastGuesses = newPastGuesses
           Direction = newDirection
+          KnownUnusedLetters = newKnownUnusedLetters
           Field = newField
       }
 
@@ -140,6 +177,7 @@ let initialState =
     Direction = Game.Right
     CurrentGuess = ""
     PastGuesses = [||]
+    KnownUnusedLetters = [||]
     Field =
       (Game.emptyField 12 12
        |> Game.Spawner.spawnSnake BASE_SNAKE_LENGTH
@@ -147,7 +185,7 @@ let initialState =
        |> Game.Spawner.spawnBackspaceRandomly)
   }
 
-Renderer.drawCanvas CANVAS_EL initialState.Field
+Renderer.drawCanvas CANVAS_EL initialState.KnownUnusedLetters initialState.Field
 |> ignore
 
 gameLoop initialState |> Async.Start

@@ -7,22 +7,14 @@ type Cell =
   | Empty
   | Snake of int
   | Letter of char
+  | Backspace
 
 type Field = Cell [] []
 
+let ALL_LETTERS = [| 'a' .. 'z' |]
+
 let emptyField (width: int) (height: int) : Field =
   Array2D'.create width height Empty
-
-let spawnSnake snakeLength (field: Field) : Field =
-  let fieldCopy = field |> Array2D'.copy
-
-  let snake =
-    [| 0 .. snakeLength - 1 |]
-    |> Array.rev
-    |> Array.map Snake
-
-  fieldCopy.[0].[0 .. snakeLength - 1] <- snake
-  fieldCopy
 
 type Direction =
   | Up
@@ -57,6 +49,7 @@ let moveSnake
     match headTargetCell with
     | Empty -> true
     | Letter _ -> true
+    | Backspace -> true
     | Snake 0 -> failwithf "Two heads? Wtf?"
     | Snake (_) -> false
 
@@ -95,38 +88,48 @@ let findNextDirection
     else
       currentDirection
 
-let spawnLetter (letter: char) rowIdx colIdx (field: Field) : Field =
-  if field.[rowIdx].[colIdx] <> Empty then
-    failwithf "Tried to spawn letter on non-empty cell"
+module Spawner =
+  let spawnSnake snakeLength (field: Field) : Field =
+    let fieldCopy = field |> Array2D'.copy
 
-  let fieldCopy = field |> Array2D'.copy
-  fieldCopy.[rowIdx].[colIdx] <- Letter letter
-  fieldCopy
+    let snake =
+      [| 0 .. snakeLength - 1 |]
+      |> Array.rev
+      |> Array.map Snake
 
-let ALL_LETTERS = [| 'a' .. 'z' |]
-
-let spawnLettersRandomly (letters: char []) field =
-  let fieldCopy = field |> Array2D'.copy
-
-  let rng = System.Random()
-
-  let emptyCellIndexesRnd =
-    Array2D'.findAllIndexes (fun _ _ cell -> cell = Empty) fieldCopy
-    |> Array.sortBy (fun _ -> rng.Next())
-
-  let lettersPlacement =
-    emptyCellIndexesRnd
-    |> Array.take (Array.length letters)
-    |> Array.zip letters
-
-  lettersPlacement
-  |> Array.fold
-    (fun fieldState (c, (rowIdx, colIdx)) ->
-      spawnLetter c rowIdx colIdx fieldState
-    )
+    fieldCopy.[0].[0 .. snakeLength - 1] <- snake
     fieldCopy
 
-let spawnAllLettersRandomly = spawnLettersRandomly ALL_LETTERS
+  let spawn (cell: Cell) rowIdx colIdx (field: Field) : Field =
+    if field.[rowIdx].[colIdx] <> Empty then
+      failwithf "Tried to spawn letter on non-empty cell"
+
+    let fieldCopy = field |> Array2D'.copy
+    fieldCopy.[rowIdx].[colIdx] <- cell
+    fieldCopy
+
+  let spawnRandomly (cells: Cell []) (field: Field) : Field =
+    let fieldCopy = field |> Array2D'.copy
+
+    let rng = System.Random()
+
+    let emptyCellIndexesRnd =
+      Array2D'.findAllIndexes (fun _ _ cell -> cell = Empty) fieldCopy
+      |> Array.sortBy (fun _ -> rng.Next())
+
+    let cellsPlacement =
+      emptyCellIndexesRnd
+      |> Array.take (Array.length cells)
+      |> Array.zip cells
+
+    cellsPlacement
+    |> Array.fold
+      (fun fieldState (c, (rowIdx, colIdx)) -> spawn c rowIdx colIdx fieldState)
+      fieldCopy
+
+
+  let spawnAllLettersRandomly = spawnRandomly (ALL_LETTERS |> Array.map Letter)
+  let spawnBackspaceRandomly = spawnRandomly [| Backspace |]
 
 let randomPossibleWord () =
   let rng = System.Random()

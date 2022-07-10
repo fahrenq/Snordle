@@ -10,6 +10,7 @@ let cellToString (cell: Game.Cell) : string =
   | Game.Cell.Empty -> "S"
   | Game.Cell.Snake x -> x.ToString()
   | Game.Cell.Letter x -> x.ToString()
+  | Game.Cell.Backspace -> "BS"
 
 let fieldToText field =
   field
@@ -199,6 +200,16 @@ let drawCell
     ctx.textBaseline <- "middle"
     ctx.textAlign <- "center"
     ctx.fillText (letter.ToString(), x, y)
+
+  | Game.Cell.Backspace _ ->
+    let x = float rowIdx * CELL_SIDE + (CELL_SIDE / 2.)
+    let y = float colIdx * CELL_SIDE + (CELL_SIDE / 2.)
+
+    ctx.fillStyle <- !^ "black"
+    ctx.font <- $"{TEXT_SIZE}px arial"
+    ctx.textBaseline <- "middle"
+    ctx.textAlign <- "center"
+    ctx.fillText ("BS", x, y)
   | Game.Cell.Empty -> ()
 
 let drawCanvas (canvas: HTMLCanvasElement) field : Game.Field =

@@ -60,7 +60,10 @@ let rec gameLoop (state: State) =
 
     let newField =
       match headCell with
-      | Game.Cell.Letter c -> Game.spawnLettersRandomly [| c |] fieldAfterMove
+      | Game.Cell.Letter c ->
+        Game.Spawner.spawnRandomly [| Game.Cell.Letter c |] fieldAfterMove
+      | Game.Cell.Backspace ->
+        Game.Spawner.spawnRandomly [| Game.Cell.Backspace |] fieldAfterMove
       | _ -> fieldAfterMove
 
     let newCurrentGuess, newPastGuesses =
@@ -79,8 +82,11 @@ let rec gameLoop (state: State) =
             |]
         else
           newCurrentGuess, state.PastGuesses
+      | Game.Cell.Backspace ->
+        writeLog "Backspace found. Current word: {state.CurrentGuess}"
 
-
+        state.CurrentGuess.Substring(0, state.CurrentGuess.Length - 1),
+        state.PastGuesses
       | _ -> state.CurrentGuess, state.PastGuesses
 
     Renderer.drawCanvas CANVAS_EL newField |> ignore
@@ -136,8 +142,9 @@ let initialState =
     PastGuesses = [||]
     Field =
       (Game.emptyField 12 12
-       |> Game.spawnSnake BASE_SNAKE_LENGTH
-       |> Game.spawnAllLettersRandomly)
+       |> Game.Spawner.spawnSnake BASE_SNAKE_LENGTH
+       |> Game.Spawner.spawnAllLettersRandomly
+       |> Game.Spawner.spawnBackspaceRandomly)
   }
 
 Renderer.drawCanvas CANVAS_EL initialState.Field

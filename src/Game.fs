@@ -22,6 +22,12 @@ type Direction =
   | Left
   | Right
 
+let isOppositeDirections d1 d2 =
+  d1 = Up && d2 = Down
+  || d1 = Down && d2 = Up
+  || d1 = Left && d2 = Right
+  || d1 = Right && d2 = Left
+
 let moveSnake
   (snakeLength: int)
   (direction: Direction)
@@ -81,12 +87,11 @@ let findNextDirection
   match queue.TryDequeue() with
   | None -> currentDirection
   | Some newDirection ->
-    let _, _, canMove = moveSnake currentLength newDirection field
-
-    if canMove then
-      newDirection
-    else
+    if isOppositeDirections currentDirection newDirection then
       currentDirection
+    else
+      newDirection
+
 
 module Spawner =
   let spawnSnake snakeLength (field: Field) : Field =

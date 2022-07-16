@@ -17,13 +17,22 @@ let fieldToText field =
   |> Array.map (Array.map cellToString >> String.concat "")
   |> String.concat "\n"
 
-let CELL_SIDE = 50.
+
 let CELL_COLOR_1 = "#D3EBCD"
 let CELL_COLOR_2 = "#AEDBCE"
 let SNAKE_COLOR = "#635666"
+let SNAKE_HEAD_COLOR = "#453B47"
+let FONT = "'Open Sans', sans-serif"
+
+// let CELL_COLOR_1 = "#FEFFDE"
+// let CELL_COLOR_2 = "#DDFFBC"
+// let SNAKE_COLOR = "#91C788"
+// let SNAKE_HEAD_COLOR = "#52734D"
+
+let CELL_SIDE = 45.
 let SNAKE_CELL_RATIO = 0.75
 let SNAKE_STROKE_WIDTH = 2.
-let TEXT_SIZE = 40.
+let TEXT_SIZE = 30.
 
 let drawCellBackground (ctx: CanvasRenderingContext2D) (xIdx, yIdx, _) =
   if (yIdx + xIdx) % 2 = 0 then
@@ -53,9 +62,16 @@ type SnakeCell =
 let rec drawSnakeCell
   (ctx: CanvasRenderingContext2D)
   (snakeCell: SnakeCell)
+  (snakePart: int)
   (colIdx, rowIdx)
   =
-  ctx.fillStyle <- !^SNAKE_COLOR
+  ctx.fillStyle <-
+    if snakePart = 0 then
+      !^SNAKE_HEAD_COLOR
+    else
+      !^SNAKE_COLOR
+
+  // ctx.globalAlpha <- 1. - ((float snakePart) / 10.)
 
   match snakeCell with
   | T ->
@@ -124,20 +140,20 @@ let rec drawSnakeCell
     )
 
   | BL ->
-    drawSnakeCell ctx B (colIdx, rowIdx)
-    drawSnakeCell ctx L (colIdx, rowIdx)
+    drawSnakeCell ctx B snakePart (colIdx, rowIdx)
+    drawSnakeCell ctx L snakePart (colIdx, rowIdx)
 
   | RB ->
-    drawSnakeCell ctx R (colIdx, rowIdx)
-    drawSnakeCell ctx B (colIdx, rowIdx)
+    drawSnakeCell ctx R snakePart (colIdx, rowIdx)
+    drawSnakeCell ctx B snakePart (colIdx, rowIdx)
 
   | LT ->
-    drawSnakeCell ctx L (colIdx, rowIdx)
-    drawSnakeCell ctx T (colIdx, rowIdx)
+    drawSnakeCell ctx L snakePart (colIdx, rowIdx)
+    drawSnakeCell ctx T snakePart (colIdx, rowIdx)
 
   | TR ->
-    drawSnakeCell ctx T (colIdx, rowIdx)
-    drawSnakeCell ctx R (colIdx, rowIdx)
+    drawSnakeCell ctx T snakePart (colIdx, rowIdx)
+    drawSnakeCell ctx R snakePart (colIdx, rowIdx)
 
 let private snakeCellFromSurroundings surroundings =
   match surroundings with
@@ -189,9 +205,9 @@ let drawCell
   =
 
   match cell with
-  | Game.Cell.Snake _ ->
+  | Game.Cell.Snake snakePart ->
     let snakeCell = snakeCellFromSurroundings surroundings
-    drawSnakeCell ctx snakeCell (colIdx, rowIdx)
+    drawSnakeCell ctx snakeCell snakePart (colIdx, rowIdx)
   | Game.Cell.Letter letter ->
     let x = float rowIdx * CELL_SIDE + (CELL_SIDE / 2.)
     let y = float colIdx * CELL_SIDE + (CELL_SIDE / 2.)
@@ -201,17 +217,17 @@ let drawCell
     else
       ctx.fillStyle <- !^ "black"
 
-    ctx.font <- $"{TEXT_SIZE}px arial"
+    ctx.font <- $"{TEXT_SIZE}px {FONT}"
     ctx.textBaseline <- "middle"
     ctx.textAlign <- "center"
-    ctx.fillText (letter.ToString(), x, y)
+    ctx.fillText (letter.ToString().ToUpper(), x, y)
 
   | Game.Cell.Backspace _ ->
     let x = float rowIdx * CELL_SIDE + (CELL_SIDE / 2.)
     let y = float colIdx * CELL_SIDE + (CELL_SIDE / 2.)
 
     ctx.fillStyle <- !^ "black"
-    ctx.font <- $"{TEXT_SIZE}px arial"
+    ctx.font <- $"{TEXT_SIZE}px {FONT}"
     ctx.textBaseline <- "middle"
     ctx.textAlign <- "center"
     ctx.fillText ("BS", x, y)

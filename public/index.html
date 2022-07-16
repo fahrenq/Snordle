@@ -1,13 +1,26 @@
 <!doctype html>
 <html>
+
 <head>
   <title>Fable</title>
   <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="shortcut icon" href="fable.ico" />
 </head>
+
 <body>
-  <div id="game" style="display: flex;">
+  <div class="wrapper">
+    <div id="game">
+    </div>
+  </div>
+
+  <!--
+  <div class="initial-screen">
+      WASD - controls
+      <button>Play</button>
+    </div>
+
+
     <canvas width="600" height="600"></canvas>
 
     <div id="guesses">
@@ -17,12 +30,23 @@
     </div>
 
     <pre class="log"></pre>
-  </div>
+  -->
 
 
   <script src="bundle.js"></script>
 
   <style>
+    .wrapper {
+      margin-top: 50px;
+      margin: 0 auto;
+      width: 800px;
+      border-radius: 10px;
+    }
+
+  </style>
+
+  <!--
+
     #game {
       display: flex;
       justify-content: space-between;
@@ -39,36 +63,87 @@
       overflow-y: auto;
     }
 
-    .guess {
-      display: flex;
+  -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap');
+
+    @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap");
+
+    * {
+      box-sizing: border-box;
     }
 
-    .guess .letter {
-      width: 50px;
-      height: 50px;
-      border: 1px solid black;
+    .guesses {
+      display: flex;
+      flex-direction: column;
+      color: white;
+      width: 100%;
+      align-items: center;
+    }
+
+    .guess {
+      display: flex;
+      font-family: "Open Sans", sans-serif;
+      margin-bottom: 20px;
+      position: relative;
+      font-size: 30px;
+    }
+
+    .letter {
+      width: 40px;
+      height: 40px;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 40px;
+      text-transform: uppercase;
+      margin: 0 1px;
+      border: 2px dotted white;
     }
 
-    .guess .letter.green, .guess.guessed .letter {
-      background-color: lightgreen;
+    .letter.green,
+    .guessed .letter {
+      background-color: #79b851;
     }
 
-    .guess .letter.grey {
-      background-color: lightgray;
+    .letter.grey {
+      background-color: #a4aec4;
     }
 
-    .guess .letter.yellow {
-      background-color: lightyellow;
+    .letter.yellow {
+      background-color: #f3c237;
     }
 
-    .guess.not-allowed .letter {
-      color: lightgray;
-      border-color: lightgray;
+    .not-allowed .letter {
+      color: grey;
+      border-color: grey;
     }
+
   </style>
 </body>
+
 </html>
+
+<!--
+    .guess::before {
+      content: "";
+      width: 155px;
+      height: 39px;
+      top: -2px;
+      left: 0;
+      position: absolute;
+      background-color: #635666;
+      z-index: 1;
+    }
+
+    .guess::after {
+      content: "";
+      width: 38px;
+      height: 39px;
+      top: -2px;
+      left: 155px;
+      position: absolute;
+      background-color: #453b47;
+      z-index: 1;
+    }
+
+  -->

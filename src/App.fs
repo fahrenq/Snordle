@@ -12,8 +12,6 @@ let rec gameLoop (prevState: Game.State) =
   async {
     do! Async.Sleep 400
     let newState = Game.tick prevState
-
-    writeLog "New State: %A" newState
     Renderer.renderState prevState newState false
 
     match newState.GameResult with

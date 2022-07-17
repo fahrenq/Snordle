@@ -10,7 +10,7 @@ let cellToString (cell: Game.Cell) : string =
   | Game.Cell.Empty -> "S"
   | Game.Cell.Snake x -> x.ToString()
   | Game.Cell.Letter x -> x.ToString()
-  | Game.Cell.Backspace -> "BS"
+  | Game.Cell.Backspace -> "🔙"
 
 let fieldToText field =
   field
@@ -23,11 +23,6 @@ let CELL_COLOR_2 = "#AEDBCE"
 let SNAKE_COLOR = "#635666"
 let SNAKE_HEAD_COLOR = "#453B47"
 let FONT = "'Open Sans', sans-serif"
-
-// let CELL_COLOR_1 = "#FEFFDE"
-// let CELL_COLOR_2 = "#DDFFBC"
-// let SNAKE_COLOR = "#91C788"
-// let SNAKE_HEAD_COLOR = "#52734D"
 
 let CELL_SIDE = 45.
 let SNAKE_CELL_RATIO = 0.75
@@ -226,11 +221,11 @@ let drawCell
     let x = float rowIdx * CELL_SIDE + (CELL_SIDE / 2.)
     let y = float colIdx * CELL_SIDE + (CELL_SIDE / 2.)
 
-    ctx.fillStyle <- !^ "black"
+    ctx.fillStyle <- !^ "balck"
     ctx.font <- $"{TEXT_SIZE}px {FONT}"
     ctx.textBaseline <- "middle"
     ctx.textAlign <- "center"
-    ctx.fillText ("BS", x, y)
+    ctx.fillText ("🔙", x, y)
   | Game.Cell.Empty -> ()
 
 let drawCanvas

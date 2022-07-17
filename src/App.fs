@@ -59,7 +59,7 @@ let initializeGameLoop
   =
   let rec gameLoop (state: State) =
     async {
-      do! Async.Sleep 300
+      do! Async.Sleep 400
 
       let snakeLength = state.BaseSnakeLength + state.PastGuesses.Length
 
@@ -142,10 +142,28 @@ let initializeGameLoop
           | Game.Cell.Backspace ->
             writeLog $"Backspace found. Current word: {state.CurrentGuess}"
 
-            state.CurrentGuess.Substring(0, state.CurrentGuess.Length - 1),
-            state.PastGuesses,
-            state.KnownUnusedLetters,
-            None
+            if state.CurrentGuess.Length = 0
+               && state.PastGuesses.Length > 0 then
+              writeLog "Backspace wraps around past guess"
+
+              let lastGuess = Array.last state.PastGuesses |> fst
+
+              writeLog $"Recovered last guess. Last guess: {lastGuess}"
+
+              writeLog
+                $"Setting current word to. Last guess: {lastGuess.Substring(0, lastGuess.Length - 1)}"
+
+
+              lastGuess.Substring(0, lastGuess.Length - 1),
+              Array.sub state.PastGuesses 0 (state.PastGuesses.Length - 1),
+              state.KnownUnusedLetters,
+              None
+            else
+              state.CurrentGuess.Substring(0, state.CurrentGuess.Length - 1),
+              state.PastGuesses,
+              state.KnownUnusedLetters,
+              None
+
           | _ ->
             state.CurrentGuess,
             state.PastGuesses,
@@ -153,7 +171,7 @@ let initializeGameLoop
             None
 
         if gameResult = Some Won then
-          return GameResult.Won
+          return Won
         else
           canvasEl.current
           |> Option.iter (fun c ->
@@ -230,6 +248,7 @@ type MenuScreen =
 
 
 open Feliz
+open Feliz.prop
 
 [<ReactComponent>]
 let InitialScreen (startGame) =
@@ -239,7 +258,7 @@ let InitialScreen (startGame) =
       prop.children
         [
           Html.div "It's like Wordle, but you're a snake!"
-          Html.div "Use arrows to move."
+          Html.div "Use arrows or touch to move."
           Html.div "You can wrap around the edges."
           Html.button
             [
@@ -282,6 +301,7 @@ let WinScreen (startGame, word: string) =
             ]
         ]
     ]
+
 [<ReactComponent>]
 let DeathScreen (startGame, word: string) =
   Html.div
@@ -316,40 +336,87 @@ let DeathScreen (startGame, word: string) =
 
 [<ReactComponent>]
 let PlayScreen (setDeathScreen, setWinScreen) =
-  let initialState =
-    {
-      Word = Game.randomPossibleWord ()
-      Direction = Game.Right
-      BaseSnakeLength = 5
-      CurrentGuess = ""
-      PastGuesses = [||]
-      KnownUnusedLetters = [||]
-      Field =
-        (Game.emptyField 12 12
-         |> Game.Spawner.spawnSnake BASE_SNAKE_LENGTH
-         |> Game.Spawner.spawnAllLettersRandomly
-         |> Game.Spawner.spawnBackspaceRandomly)
-    }
-
   let canvasRef = React.useRef (None)
   let currentGuessRef = React.useRef (None)
   let guessHistoryRef = React.useRef (None)
 
-  writeLog "Initializing game"
-  writeLog $"The word is: {initialState.Word}"
+  React.useEffectOnce (fun () ->
+    let initialState =
+      {
+        Word = Game.randomPossibleWord ()
+        Direction = Game.Right
+        BaseSnakeLength = 5
+        CurrentGuess = ""
+        PastGuesses = [||]
+        KnownUnusedLetters = [||]
+        Field =
+          (Game.emptyField 12 12
+           |> Game.Spawner.spawnSnake BASE_SNAKE_LENGTH
+           |> Game.Spawner.spawnAllLettersRandomly
+           |> Game.Spawner.spawnBackspaceRandomly)
+      }
 
-  async.Bind(
-    initializeGameLoop canvasRef currentGuessRef guessHistoryRef initialState,
-    fun gameResult ->
-      match gameResult with
-      | Won -> async.Return(setWinScreen initialState.Word)
-      | Lost -> async.Return(setDeathScreen initialState.Word)
+    writeLog "Initializing game"
+    writeLog $"The word is: {initialState.Word}"
+
+    async.Bind(
+      initializeGameLoop canvasRef currentGuessRef guessHistoryRef initialState,
+      fun gameResult ->
+        match gameResult with
+        | GameResult.Won -> async.Return(setWinScreen initialState.Word)
+        | GameResult.Died -> async.Return(setDeathScreen initialState.Word)
+    )
+    |> Async.Start
   )
-  |> Async.Start
+
+  let (touchStartY, setTouchStartY) = React.useState<float option> (None)
+  let (touchEndY, setTouchEndY) = React.useState<float option> (None)
+  let (touchStartX, setTouchStartX) = React.useState<float option> (None)
+  let (touchEndX, setTouchEndX) = React.useState<float option> (None)
+
+  React.useEffect (
+    (fun () ->
+      match touchStartX, touchEndX, touchStartY, touchEndY with
+      | Some startX, Some endX, Some startY, Some endY ->
+
+        let xDiff = startX - endX
+        let yDiff = startY - endY
+
+        writeLog $"xDiff: {xDiff}, yDiff: {yDiff}"
+
+        let direction =
+          if abs xDiff > abs yDiff then // left-right
+            if xDiff > 0. then
+              Game.Left
+            else
+              Game.Right
+          else if yDiff > 0. then
+            Game.Up
+          else
+            Game.Down
+
+        INPUT_BUFFER.TryEnqueue(direction) |> ignore
+        setTouchStartY (None)
+        setTouchEndY (None)
+        setTouchStartX (None)
+        setTouchEndX (None)
+        ()
+      | _ -> ()
+    ),
+    [| box touchEndY; box touchEndX |]
+  )
 
   Html.div
     [
       prop.classes [ "game-screen-play" ]
+      prop.onTouchStart (fun e ->
+        setTouchStartX (Some e.touches.[0].clientX)
+        setTouchStartY (Some e.touches.[0].clientY)
+      )
+      prop.onTouchMove (fun e ->
+        setTouchEndX (Some e.touches.[0].clientX)
+        setTouchEndY (Some e.touches.[0].clientY)
+      )
       prop.children
         [
           Html.canvas
@@ -403,7 +470,5 @@ let Game () =
         ]
 
     ]
-
-open Browser.Dom
 
 ReactDOM.render (Game(), document.getElementById "game")

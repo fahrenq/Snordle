@@ -49,13 +49,13 @@ type State =
 
 type GameResult =
   | Won
-  | Lost
+  | Died
 
 let initializeGameLoop
   (canvasEl: IRefValue<HTMLCanvasElement option>)
   (currentGuessEl: IRefValue<HTMLDivElement option>)
   (guessHistoryEl: IRefValue<HTMLDivElement option>)
-  initialState
+  (initialState: State)
   =
   let rec gameLoop (state: State) =
     async {
@@ -74,8 +74,8 @@ let initializeGameLoop
         Game.moveSnake snakeLength newDirection state.Field
 
       if not moved then
-        printf "You lost!"
-        return GameResult.Lost
+        printf "You died!"
+        return GameResult.Died
       else
         let newField =
           match headCell with
@@ -140,7 +140,7 @@ let initializeGameLoop
             else
               newCurrentGuess, state.PastGuesses, state.KnownUnusedLetters, None
           | Game.Cell.Backspace ->
-            writeLog "Backspace found. Current word: {state.CurrentGuess}"
+            writeLog $"Backspace found. Current word: {state.CurrentGuess}"
 
             state.CurrentGuess.Substring(0, state.CurrentGuess.Length - 1),
             state.PastGuesses,
@@ -235,11 +235,19 @@ open Feliz
 let InitialScreen (startGame) =
   Html.div
     [
-      Html.p "Use arrows to move"
-      Html.button
+      prop.className "game-screen-initial"
+      prop.children
         [
-          prop.text "Play"
-          prop.onClick (fun _ -> startGame ())
+          Html.div "It's like Wordle, but you're a snake!"
+          Html.div "Use arrows to move."
+          Html.div "You can wrap around the edges."
+          Html.button
+            [
+              prop.className "game-button"
+              prop.text "Play"
+              prop.onClick (fun _ -> startGame ())
+            ]
+
         ]
     ]
 
@@ -247,25 +255,62 @@ let InitialScreen (startGame) =
 let WinScreen (startGame, word: string) =
   Html.div
     [
-      Html.p "You won!"
-      Html.p $"The word was: {word}"
-      Html.button
+      prop.className "game-screen-win"
+      prop.children
         [
-          prop.text "Play again"
-          prop.onClick (fun _ -> startGame ())
+          Html.div "You won!"
+          Html.div "The word was:"
+          Html.div
+            [
+              prop.className "guess guessed"
+              prop.children (
+                word.ToCharArray()
+                |> Array.map (fun c ->
+                  Html.span
+                    [
+                      prop.className "letter"
+                      prop.text (c.ToString())
+                    ]
+                )
+              )
+            ]
+          Html.button
+            [
+              prop.className "game-button"
+              prop.text "Play again"
+              prop.onClick (fun _ -> startGame ())
+            ]
         ]
     ]
-
 [<ReactComponent>]
 let DeathScreen (startGame, word: string) =
   Html.div
     [
-      Html.p "You lost :("
-      Html.p $"The word was: {word}"
-      Html.button
+      prop.className "game-screen-death"
+      prop.children
         [
-          prop.text "Play again"
-          prop.onClick (fun _ -> startGame ())
+          Html.div "You lost :("
+          Html.div "The word was:"
+          Html.div
+            [
+              prop.className "guess"
+              prop.children (
+                word.ToCharArray()
+                |> Array.map (fun c ->
+                  Html.span
+                    [
+                      prop.className "letter"
+                      prop.text (c.ToString())
+                    ]
+                )
+              )
+            ]
+          Html.button
+            [
+              prop.className "game-button"
+              prop.text "Play again"
+              prop.onClick (fun _ -> startGame ())
+            ]
         ]
     ]
 
@@ -290,19 +335,21 @@ let PlayScreen (setDeathScreen, setWinScreen) =
   let currentGuessRef = React.useRef (None)
   let guessHistoryRef = React.useRef (None)
 
+  writeLog "Initializing game"
+  writeLog $"The word is: {initialState.Word}"
 
   async.Bind(
     initializeGameLoop canvasRef currentGuessRef guessHistoryRef initialState,
     fun gameResult ->
       match gameResult with
-      | GameResult.Won -> async.Return(setWinScreen (initialState.Word))
-      | GameResult.Lost -> async.Return(setDeathScreen (initialState.Word))
+      | Won -> async.Return(setWinScreen initialState.Word)
+      | Lost -> async.Return(setDeathScreen initialState.Word)
   )
   |> Async.Start
 
   Html.div
     [
-      prop.style [ style.display.flex ]
+      prop.classes [ "game-screen-play" ]
       prop.children
         [
           Html.canvas
@@ -314,10 +361,13 @@ let PlayScreen (setDeathScreen, setWinScreen) =
           Html.div
             [
               prop.className "guesses"
-              prop.children [
-                Html.div [ prop.ref currentGuessRef ]
-                Html.div [ prop.ref guessHistoryRef ]
-              ]
+              prop.children
+                [
+                  Html.h1 "Current Guess"
+                  Html.div [ prop.ref currentGuessRef ]
+                  Html.h1 "Past Guesses"
+                  Html.div [ prop.ref guessHistoryRef ]
+                ]
             ]
 
         ]
@@ -325,31 +375,17 @@ let PlayScreen (setDeathScreen, setWinScreen) =
 
 [<ReactComponent>]
 let Game () =
-  let (screen, setScreen) = React.useState (MenuScreen.Play)
+  let (screen, setScreen) = React.useState (MenuScreen.Initial)
 
   Html.div
     [
-      prop.style
-        [
-          style.minHeight (length.px 590)
-          style.backgroundColor "#90C8AC"
-        ]
+      prop.className "game-root"
       prop.children
         [
           // Header
           Html.div
             [
-              prop.style
-                [
-                  style.width (length.percent 100)
-                  style.height (length.px 50)
-                  style.backgroundColor "#90C8AC"
-                  style.display.flex
-                  style.justifyContent.center
-                  style.alignItems.center
-                  style.fontFamily "monospace"
-                  style.fontSize (length.px 30)
-                ]
+              prop.className "game-header"
               prop.children [ Html.span "Snordle" ]
             ]
 

@@ -9,6 +9,7 @@
 </head>
 
 <body>
+  <header>Big header for testing</header>
   <div class="wrapper">
     <div id="game">
     </div>
@@ -17,6 +18,10 @@
   <script src="bundle.js"></script>
 
   <style>
+    header {
+      height: 250px;
+    }
+
     .wrapper {
       margin-top: 50px;
       margin: 0 auto;
@@ -71,6 +76,7 @@
       align-items: center;
       flex-direction: column;
       font-size: 30px;
+      padding: 0 20px;
     }
 
     .game-screen-initial>*,
@@ -146,6 +152,9 @@
       border-color: grey;
     }
 
+    .past-guesses {
+      min-height: 300px;
+    }
   </style>
 </body>
 

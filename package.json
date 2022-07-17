@@ -3,7 +3,7 @@
   "scripts": {
     "postinstall": "dotnet tool restore",
     "start": "NODE_OPTIONS='--openssl-legacy-provider' dotnet fable watch src --run webpack-dev-server",
-    "build": "dotnet fable src && webpack"
+    "build": "NODE_OPTIONS='--openssl-legacy-provider' dotnet fable src && webpack"
   },
   "devDependencies": {
     "webpack": "^4.46.0",

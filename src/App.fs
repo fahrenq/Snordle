@@ -146,6 +146,8 @@ let PlayScreen (setDeathScreen, setWinScreen) =
            |> Game.Spawner.spawnBackspaceRandomly)
       }
 
+    canvasRef.current.Value.scrollIntoView true
+
     writeLog "Initializing game"
     writeLog $"The word is: {initialState.Word}"
 
@@ -240,7 +242,11 @@ let PlayScreen (setDeathScreen, setWinScreen) =
                   Html.h1 "Current Guess"
                   Html.div [ prop.ref currentGuessRef ]
                   Html.h1 "Past Guesses"
-                  Html.div [ prop.ref guessHistoryRef ]
+                  Html.div
+                    [
+                      prop.ref guessHistoryRef
+                      prop.className "past-guesses"
+                    ]
                 ]
             ]
 

@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>Fable</title>
+  <title>Snordle</title>
   <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="shortcut icon" href="fable.ico" />
@@ -27,25 +27,6 @@
 
   </style>
 
-  <!--
-
-    #game {
-      display: flex;
-      justify-content: space-between;
-      align-items: self-start;
-    }
-
-    #game .log {
-      width: 300px;
-      height: 750px;
-      background-color: #000;
-      color: #fff;
-      padding: 10px;
-      border-radius: 10px;
-      overflow-y: auto;
-    }
-
-  -->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400&display=swap');
 
@@ -55,6 +36,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      min-height: 600px;
     }
 
     .game-header {
@@ -83,6 +65,7 @@
     .game-screen-win,
     .game-screen-death {
       height: 100%;
+      flex-grow: 1;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -167,28 +150,3 @@
 </body>
 
 </html>
-
-<!--
-    .guess::before {
-      content: "";
-      width: 155px;
-      height: 39px;
-      top: -2px;
-      left: 0;
-      position: absolute;
-      background-color: #635666;
-      z-index: 1;
-    }
-
-    .guess::after {
-      content: "";
-      width: 38px;
-      height: 39px;
-      top: -2px;
-      left: 155px;
-      position: absolute;
-      background-color: #453b47;
-      z-index: 1;
-    }
-
-  -->

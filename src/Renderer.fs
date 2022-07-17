@@ -329,3 +329,26 @@ let colorGuesses (el: HTMLElement) (guesses: Game.CheckGuessResult []) =
     | Game.CheckGuessResult.NotAllowed -> guessEl.classList.add "not-allowed"
     | Game.CheckGuessResult.Guessed -> guessEl.classList.add "guessed"
   )
+
+let renderState (prevState: Game.State) (newState: Game.State) (force: bool) =
+  drawCanvas newState.CanvasEl newState.KnownUnusedLetters newState.Field
+  |> ignore
+
+  if force
+     || (prevState.CurrentGuess <> newState.CurrentGuess) then
+    renderGuesses newState.CurrentGuessEl [| newState.CurrentGuess |]
+
+  if force
+     || (prevState.PastGuesses <> newState.PastGuesses) then
+    let pastGuessesToRender =
+      newState.PastGuesses
+      |> Array.rev
+      |> Array.sortBy (fun (word, checkGuessResult) ->
+        match checkGuessResult with
+        | Game.CheckGuessResult.Guessed -> 0
+        | Game.CheckGuessResult.NotGuessed _ -> 1
+        | Game.CheckGuessResult.NotAllowed _ -> 2
+      )
+
+    renderGuesses newState.GuessHistoryEl (pastGuessesToRender |> Array.map fst)
+    colorGuesses newState.GuessHistoryEl (pastGuessesToRender |> Array.map snd)

@@ -3,11 +3,8 @@
 #load "./Queue.fs"
 #load "./Game.fs"
 
-let field = Game.emptyField 20 20 |> Game.spawnSnake 5
 
 Game.randomPossibleWord ()
-
-field
 
 
 

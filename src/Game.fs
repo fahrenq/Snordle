@@ -2,6 +2,9 @@
 module Game
 
 open Queue
+open Browser.Types
+
+let writeLog = printf
 
 type Cell =
   | Empty
@@ -192,3 +195,131 @@ let checkGuess (word: string) (guess: string) =
     NotGuessed(calculateWordleGraph word guess)
   else
     NotAllowed
+
+type GameResult =
+  | Won
+  | Died
+
+type State =
+  {
+    Word: string
+    BaseSnakeLength: int
+    CurrentGuess: string
+    PastGuesses: (string * CheckGuessResult) []
+    KnownUnusedLetters: char []
+    Direction: Direction
+    CanvasEl: HTMLCanvasElement
+    CurrentGuessEl: HTMLDivElement
+    GuessHistoryEl: HTMLDivElement
+    InputBuffer: Queue<Direction>
+    Field: Field
+    GameResult: GameResult option
+  }
+
+let tick state =
+  let snakeLength = state.BaseSnakeLength + state.PastGuesses.Length
+
+  let newDirection =
+    findNextDirection state.Direction snakeLength state.InputBuffer state.Field
+
+  let fieldAfterMove, headCell, moved =
+    moveSnake snakeLength newDirection state.Field
+
+  // Check what needs to be spawn
+  let newField =
+    match headCell with
+    | Cell.Letter c -> Spawner.spawnRandomly [| Cell.Letter c |] fieldAfterMove
+    | Cell.Backspace ->
+      Spawner.spawnRandomly [| Cell.Backspace |] fieldAfterMove
+    | _ -> fieldAfterMove
+
+  let (newCurrentGuess, newPastGuesses) =
+    match headCell with
+    | Cell.Letter c ->
+      let newCurrentGuess = state.CurrentGuess + c.ToString()
+      writeLog $"New letter found. Current word: {newCurrentGuess}"
+
+      if newCurrentGuess.Length = state.Word.Length then
+        match checkGuess state.Word newCurrentGuess with
+        | CheckGuessResult.Guessed as checkGuessResult ->
+          writeLog "You win!"
+
+          "",
+          Array.append state.PastGuesses [| newCurrentGuess, checkGuessResult |]
+
+        | CheckGuessResult.NotAllowed as checkGuessResult ->
+          writeLog "Invalid word, get longer!"
+
+          "",
+          Array.append state.PastGuesses [| newCurrentGuess, checkGuessResult |]
+
+        | CheckGuessResult.NotGuessed graph as checkGuessResult ->
+          writeLog "Valid guess, but not the word!"
+
+          "",
+          Array.append state.PastGuesses [| newCurrentGuess, checkGuessResult |]
+
+      else
+        newCurrentGuess, state.PastGuesses
+    | Cell.Backspace ->
+      writeLog $"Backspace found. Current word: {state.CurrentGuess}"
+
+      if state.CurrentGuess.Length = 0
+         && state.PastGuesses.Length > 0 then
+        writeLog "Backspace wraps around past guess"
+
+        let lastGuess = Array.last state.PastGuesses |> fst
+
+        writeLog $"Recovered last guess. Last guess: {lastGuess}"
+
+        writeLog
+          $"Setting current word to. Last guess: {lastGuess.Substring(0, lastGuess.Length - 1)}"
+
+
+        lastGuess.Substring(0, lastGuess.Length - 1),
+        Array.sub state.PastGuesses 0 (state.PastGuesses.Length - 1)
+      else
+        state.CurrentGuess.Substring(0, state.CurrentGuess.Length - 1),
+        state.PastGuesses
+    | _ -> state.CurrentGuess, state.PastGuesses
+
+  let newKnownUnusedLetters =
+    if newPastGuesses.Length <> state.PastGuesses.Length then
+      let lastGuess = newPastGuesses |> Array.tryLast
+
+      match lastGuess with
+      | Some (lastWord, CheckGuessResult.NotGuessed graph) ->
+        let unusedLetters =
+          graph
+          |> Array.indexed
+          |> Array.filter (fun (_, marker) -> marker = WordleMarker.Grey)
+          |> Array.map (fun (idx, _) -> lastWord.[idx])
+
+        Array.append state.KnownUnusedLetters unusedLetters
+        |> Array.distinct
+      | _ -> state.KnownUnusedLetters
+    else
+      state.KnownUnusedLetters
+
+  let newGameResult =
+    if newPastGuesses.Length <> state.PastGuesses.Length then
+      let lastCheckGuessResult =
+        newPastGuesses |> Array.tryLast |> Option.map snd
+
+      if lastCheckGuessResult = Some CheckGuessResult.Guessed then
+        Some Won
+      else
+        None
+    else if not moved then
+      Some Died
+    else
+      None
+
+  { state with
+      CurrentGuess = newCurrentGuess
+      PastGuesses = newPastGuesses
+      Direction = newDirection
+      KnownUnusedLetters = newKnownUnusedLetters
+      Field = newField
+      GameResult = newGameResult
+  }

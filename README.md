@@ -1,5 +1,5 @@
 # Snordle
 
-Play at https://ivan.engineering/games/snordle/
+Play at https://ivan.engineering/projects/snordle/
 
 ![](./Snordle.png)

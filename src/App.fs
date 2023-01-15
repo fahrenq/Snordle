@@ -146,7 +146,9 @@ let PlayScreen (setDeathScreen, setWinScreen) =
            |> Game.Spawner.spawnBackspaceRandomly)
       }
 
-    canvasRef.current.Value.scrollIntoView true
+    // canvasRef.current.Value.scrollIntoView true
+    // window.scroll(0., 0.)
+    document.getElementById("game").scrollIntoView true
 
     writeLog "Initializing game"
     writeLog $"The word is: {initialState.Word}"
@@ -156,12 +158,19 @@ let PlayScreen (setDeathScreen, setWinScreen) =
 
       fun e ->
         match e.code with
-        | "ArrowUp" -> inputBuffer.current.TryEnqueue Game.Up |> ignore
+        | "ArrowUp" ->
+          e.preventDefault()
+          inputBuffer.current.TryEnqueue Game.Up |> ignore
         | "ArrowRight" ->
+          e.preventDefault()
           inputBuffer.current.TryEnqueue Game.Right
           |> ignore
-        | "ArrowDown" -> inputBuffer.current.TryEnqueue Game.Down |> ignore
-        | "ArrowLeft" -> inputBuffer.current.TryEnqueue Game.Left |> ignore
+        | "ArrowDown" ->
+          e.preventDefault()
+          inputBuffer.current.TryEnqueue Game.Down |> ignore
+        | "ArrowLeft" ->
+          e.preventDefault()
+          inputBuffer.current.TryEnqueue Game.Left |> ignore
         | _ -> ()
 
     async {
@@ -173,7 +182,7 @@ let PlayScreen (setDeathScreen, setWinScreen) =
       | Game.Died -> setDeathScreen initialState.Word
 
     }
-    |> Async.Start
+    |> Async.StartImmediate
   )
 
   let (touchStartY, setTouchStartY) = React.useState<float option> (None)

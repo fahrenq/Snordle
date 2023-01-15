@@ -17,18 +17,29 @@
   <script src="bundle.js"></script>
 
   <style>
-    .wrapper {
-      margin-top: 50px;
-      margin: 0 auto;
-      border-radius: 10px;
-      max-width: 800px;
-      overflow: hidden
+    body {
+      margin: 0;
     }
 
+    .wrapper {
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100vw;
+      height: 100vh;
+    }
   </style>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400&display=swap');
+
+    #game {
+      width: 100%;
+      max-width: 800px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
 
     .game-root {
       background-color: #90C8AC;
@@ -37,6 +48,8 @@
       display: flex;
       flex-direction: column;
       min-height: 600px;
+      max-width: 800px;
+      width: 100%;
       color: black;
     }
 
